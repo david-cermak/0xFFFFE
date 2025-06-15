@@ -1,0 +1,32 @@
+From eb2d315bca01c0cdd4ef54429d3b29dacfa1fe04 Mon Sep 17 00:00:00 2001
+From: David Cermak <cermak@espressif.com>
+Date: Sun, 15 Jun 2025 21:22:24 +0200
+Subject: [PATCH] multiple defs of lwip globals
+
+---
+ components/lwip/test_afl_host/network_mock.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/components/lwip/test_afl_host/network_mock.c b/components/lwip/test_afl_host/network_mock.c
+index cf35fdb6..0178426f 100644
+--- a/components/lwip/test_afl_host/network_mock.c
++++ b/components/lwip/test_afl_host/network_mock.c
+@@ -7,11 +7,11 @@
+ #include <string.h>
+ #include <stdio.h>
+
+-const ip_addr_t ip_addr_any;
+-const ip_addr_t ip_addr_broadcast;
+-const ip_addr_t ip_addr_any_type;
+-struct ip_globals ip_data;
+-struct netif *netif_list;
++// const ip_addr_t ip_addr_any;
++// const ip_addr_t ip_addr_broadcast;
++// const ip_addr_t ip_addr_any_type;
++// struct ip_globals ip_data;
++// struct netif *netif_list;
+ struct udp_pcb mock_pcb;
+ uint32_t g_random_numbers[8] = {0};
+ uint32_t g_random_numbers_cnt = 0;
+--
+2.25.1
