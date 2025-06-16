@@ -1,0 +1,3 @@
+Hello World%d
+Test 132 !@#$%
+Test input 1

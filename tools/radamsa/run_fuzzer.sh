@@ -1,14 +1,38 @@
 #!/bin/bash
 
-# Radamsa fuzzing script for IoT Network Message Parser
-# Usage: ./run_fuzzer.sh [-n number_of_runs] [-t timeout_seconds]
+# Universal Radamsa Fuzzing Script
+# Usage: ./run_fuzzer.sh [-n number_of_runs] [-t timeout_seconds] [-b target_binary] [-s sample_file]
+#        [--crashes-dir dir] [--timeouts-dir dir] [--errors-dir dir] [--log-file file]
 
 set -e
+
+# Function to handle cleanup on exit
+cleanup() {
+    echo ""
+    echo "Fuzzing interrupted by user!"
+    echo "=========================================="
+    echo "Partial results:"
+    echo "Total runs: $runs"
+    echo "Crashes found: $crashes"
+    echo "Timeouts: $timeouts"
+    echo "Other errors: $errors"
+    if [ $runs -gt 0 ]; then
+        SUCCESS_RATE=$(echo "scale=2; ($runs - $crashes - $timeouts - $errors) * 100 / $runs" | bc -l)
+        echo "Success rate: ${SUCCESS_RATE}%"
+    fi
+
+    # Clean up temp file
+    rm -f "$TEMP_INPUT"
+    exit 0
+}
+
+# Set up trap for Ctrl+C
+trap cleanup SIGINT
 
 # Default values
 NUM_RUNS=1000
 TIMEOUT=5
-TARGET_BINARY="../sample/build/iot_parser"
+TARGET_BINARY=""
 SAMPLE_FILE="sample_inputs.txt"
 CRASHES_DIR="crashes"
 TIMEOUTS_DIR="timeouts"
@@ -16,24 +40,42 @@ ERRORS_DIR="errors"
 LOG_FILE="fuzzing.log"
 
 # Parse command line arguments
-while getopts "n:t:h" opt; do
-    case $opt in
-        n) NUM_RUNS="$OPTARG" ;;
-        t) TIMEOUT="$OPTARG" ;;
-        h) echo "Usage: $0 [-n runs] [-t timeout] [-h help]"
-           echo "  -n: Number of fuzzing runs (default: 1000)"
-           echo "  -t: Timeout per run in seconds (default: 5)"
-           echo "  -h: Show this help"
-           exit 0 ;;
-        *) echo "Invalid option. Use -h for help."; exit 1 ;;
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -n) NUM_RUNS="$2"; shift 2 ;;
+        -t) TIMEOUT="$2"; shift 2 ;;
+        -b) TARGET_BINARY="$2"; shift 2 ;;
+        -s) SAMPLE_FILE="$2"; shift 2 ;;
+        --crashes-dir) CRASHES_DIR="$2"; shift 2 ;;
+        --timeouts-dir) TIMEOUTS_DIR="$2"; shift 2 ;;
+        --errors-dir) ERRORS_DIR="$2"; shift 2 ;;
+        --log-file) LOG_FILE="$2"; shift 2 ;;
+        -h|--help)
+            echo "Usage: $0 [-n runs] [-t timeout] [-b target_binary] [-s sample_file]"
+            echo "       [--crashes-dir dir] [--timeouts-dir dir] [--errors-dir dir] [--log-file file]"
+            echo "  -n: Number of fuzzing runs (default: 1000)"
+            echo "  -t: Timeout per run in seconds (default: 5)"
+            echo "  -b: Target binary to fuzz (required)"
+            echo "  -s: Sample input file (default: sample_inputs.txt)"
+            echo "  --crashes-dir: Directory for crash files (default: crashes)"
+            echo "  --timeouts-dir: Directory for timeout files (default: timeouts)"
+            echo "  --errors-dir: Directory for error files (default: errors)"
+            echo "  --log-file: Log file path (default: fuzzing.log)"
+            exit 0 ;;
+        *) echo "Invalid option: $1"; exit 1 ;;
     esac
 done
+
+# Validate required parameters
+if [ -z "$TARGET_BINARY" ]; then
+    echo "Error: Target binary (-b) is required"
+    echo "Usage: $0 [-n runs] [-t timeout] [-b target_binary] [-s sample_file] [-h help]"
+    exit 1
+fi
 
 # Check if target binary exists
 if [ ! -f "$TARGET_BINARY" ]; then
     echo "Error: Target binary not found at $TARGET_BINARY"
-    echo "Please build the IoT parser first:"
-    echo "  cd ../sample && mkdir build && cd build && cmake .. && make"
     exit 1
 fi
 
@@ -47,18 +89,14 @@ fi
 # Create directories
 mkdir -p "$CRASHES_DIR" "$TIMEOUTS_DIR" "$ERRORS_DIR"
 
-# Create sample input file if it doesn't exist
+# Create default sample input file if it doesn't exist
 if [ ! -f "$SAMPLE_FILE" ]; then
-    echo "Creating sample input file..."
+    echo "Creating default sample input file..."
     cat > "$SAMPLE_FILE" << 'EOF'
-mqtt/home/temperature {"device_id":"sensor01","temperature":23.5,"status":"active"}
-mqtt/device/led {"action":"toggle","brightness":80,"color":"red"}
-mqtt/sensors/humidity {"device_id":"esp32_01","humidity":65,"location":"kitchen"}
-GET /api/sensors {"action":"read","sensor":"temperature"}
-POST /device/control {"action":"set","value":"on","device":"fan"}
-GET /status {"device_id":"thermostat","action":"get_state"}
-POST /api/data {"temperature":22.5,"humidity":60,"timestamp":1234567890}
-mqtt/alarm/motion {"sensor":"pir_01","status":"detected","room":"living_room"}
+Hello World
+Test Input 1
+Test Input 2
+Test Input 3
 EOF
 fi
 
@@ -138,7 +176,8 @@ echo "Total runs: $runs"
 echo "Crashes found: $crashes"
 echo "Timeouts: $timeouts"
 echo "Other errors: $errors"
-echo "Success rate: $(echo "scale=2; ($runs - $crashes - $timeouts - $errors) * 100 / $runs" | bc -l)%"
+SUCCESS_RATE=$(echo "scale=2; ($runs - $crashes - $timeouts - $errors) * 100 / $runs" | bc -l)
+echo "Success rate: ${SUCCESS_RATE}%"
 
 if [ $crashes -gt 0 ]; then
     echo ""
