@@ -62,3 +62,9 @@ This is also the best way to get started and experiment with real life fuzz targ
 | Tool | Project | Method | Highlights | Notes |
 |------|---------|--------|--------|--------|
 | AFLplusplus | lwip | host | CI job | complicated/stateful |
+
+## 08 -- mDNS with AFL++ and LLM to generate seed inputs
+
+| Tool | Project | Method | Highlights | Notes |
+|------|---------|--------|--------|--------|
+| AFLplusplus | mdns | host | LLM test generation |  |

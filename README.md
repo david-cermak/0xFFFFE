@@ -43,6 +43,6 @@ Overview of different fuzzers
 
 ## Getting started
 
-For concrete examples of specific fuzzing experiments, start with the `session` directory where you'll find hands-on examples and practical implementations.
+For concrete examples of specific fuzzing experiments, start with the [`examples`](examples/README.md) directory where you'll find hands-on examples and practical implementations.
 
 ![BlackBox fuzzer crash](crash.gif)
