@@ -52,3 +52,9 @@ This is also the best way to get started and experiment with real life fuzz targ
 |------|---------|--------|------------|-------|
 | angr | protocol | firmware-binary  | works with binary | limited |
 |      |         |                   | analytic solution | no support for riscV32 |
+
+## 07 -- Fuzzing LWIP in CI with AFL++
+
+| Tool | Project | Method | Highlights | Notes |
+|------|---------|--------|--------|--------|
+| AFLplusplus | lwip | host | CI job | complicated/stateful |

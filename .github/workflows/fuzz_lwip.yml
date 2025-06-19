@@ -1,0 +1,47 @@
+name: "07: afl++ on lwip"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+jobs:
+  fuzz_test:
+    if: contains(github.event.pull_request.labels.*.name, 'fuzz') || github.event_name == 'push'
+    name: Fuzzer tests for lwip
+
+    runs-on: ubuntu-22.04
+    container: aflplusplus/aflplusplus
+    steps:
+      - name: Checkout lwip
+        uses: actions/checkout@v4
+        with:
+          repository: lwip-tcpip/lwip
+          path: lwip
+
+      - name: Run AFL++
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/idf
+          cd test/fuzz
+          CC=afl-gcc-fast CCDEP=gcc make -j 4
+          timeout 10m afl-fuzz -i input -o out -- ./lwip_fuzz || \
+          if [ $? -eq 124 ]; then  # timeout exit code
+            if [ -n "$(find out/default/crashes -type f 2>/dev/null)" ]; then
+              echo "Crashes found!";
+              tar -czf out/default/crashes.tar.gz -C out/default crashes;
+              exit 1;
+            fi
+          else
+            exit 1;
+          fi
+
+      - name: Upload Crash Artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes
+          path: $GITHUB_WORKSPACE/idf/test/fuzz/out/default/crashes.tar.gz
+          if-no-files-found: ignore
