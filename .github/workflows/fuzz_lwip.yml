@@ -24,10 +24,10 @@ jobs:
       - name: Run AFL++
         shell: bash
         run: |
-          cd $GITHUB_WORKSPACE/idf
+          cd $GITHUB_WORKSPACE/lwip
           cd test/fuzz
           CC=afl-gcc-fast CCDEP=gcc make -j 4
-          timeout 10m afl-fuzz -i input -o out -- ./lwip_fuzz || \
+          timeout 10m afl-fuzz -i inputs -o out -- ./lwip_fuzz || \
           if [ $? -eq 124 ]; then  # timeout exit code
             if [ -n "$(find out/default/crashes -type f 2>/dev/null)" ]; then
               echo "Crashes found!";
@@ -43,5 +43,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: fuzz-crashes
-          path: $GITHUB_WORKSPACE/idf/test/fuzz/out/default/crashes.tar.gz
+          path: $GITHUB_WORKSPACE/lwip/test/fuzz/out/default/crashes.tar.gz
           if-no-files-found: ignore
