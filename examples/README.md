@@ -68,3 +68,10 @@ This is also the best way to get started and experiment with real life fuzz targ
 | Tool | Project | Method | Highlights | Notes |
 |------|---------|--------|--------|--------|
 | AFLplusplus | mdns | host | LLM test generation |  |
+
+
+## 09 -- DHCP server with stateful AFLNet
+
+| Tool | Project | Method | Highlights | Notes |
+|------|---------|--------|--------|--------|
+| AFLNet | DHCP | host | Protocol/state aware |  |
