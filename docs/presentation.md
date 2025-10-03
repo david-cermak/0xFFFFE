@@ -2,7 +2,7 @@
 marp: true
 theme: default
 paginate: true
-header: 'Basic intro into fuzz-testing'
+header: 'Practical intro into fuzz-testing'
 footer: '0xFFFFE - Fuzzing Fundamentals For Firmware Engineers'
 style: |
   h4 {
@@ -11,26 +11,42 @@ style: |
   pre {
     font-size: 0.8em;
   }
-  img {
-    width: 30%;
-    height: auto;
-    float: right;
-  }
 ---
 
 # Practical intro into fuzz-testing
 
 ![fuzzing](fuzz-intro.jpg)
 
-**20-minute crash course on dynamic testing for firmware**
+**David Cermak, Embedded developer**
 
 ---
+
+# 0xFFFFE
+
+### __github.com/david-cermak/0xFFFFE__
+
+* **Projects** (demo apps -> libs)
+* **Tools** -- fuzzers
+  * Black-box
+  * Grey box (Coverage guided, state guided, protocol fuzzers, LLM enhanced)
+  * White box fuzzers
+* **Methods** (Host tests, HW in the loop, QEMU)
+
+---
+# Experiment
+
+* mDNS library
+  - real library
+  - real bug
+
+---
+
 
 # What is Fuzzing?
 
 > **Dynamic testing technique** that feeds random/malformed input to find crashes, vulnerabilities, and edge cases
 
-## Why Embedded Engineers Should Care
+## Why Should We Care
 - **Robustness**: Find subtle bugs before deployment
 - **Security**: Discover vulnerabilities in protocol stacks
 - **Edge Cases**: Uncover hard-to-reproduce issues
@@ -48,11 +64,30 @@ style: |
 * State guided, protocol fuzzers (AFLNet)
 * LLM enhanced
 
-### White box fuzzers (angr)
+### White box (angr)
 
 ---
 
-# Fuzzing Approaches - Examples
+## Black box
+
+![fuzzing](black.png)
+
+---
+
+## Grey box
+
+![fuzzing](grey.png)
+
+---
+
+## White box
+
+![fuzzing](white.png)
+
+---
+
+
+# Fuzzing Approaches
 
 | Approach | Tool | Method | Pros | Cons |
 |----------|------|--------|------|------|
@@ -62,57 +97,89 @@ style: |
 
 ---
 
-# Example 1: Hello World with radamsa
-## Black-box fuzzing - Getting started
+
+
+# Hello World with radamsa
+
+```cpp
+printf("Hello ");
+printf(argv[1]);  // printf("%s", argv[1]);
+printf("!\n");
+// ./hello Josef
+// ./hello %s
+```
 
 ```bash
-./fuzz.sh
+echo "David @#$^%&" | radamsa -n 1000 | xarg -0 ./hello
+#
 # 1000 runs, 6 errors found
 # AddressSanitizer: SEGV on format string vulnerability
 ```
 
-**Key Takeaways:**
-- ✅ **Simple setup** - minimal configuration
-- ✅ **Quick results** - found format string bug
-- ✅ **Use sanitizers** - AddressSanitizer caught the crash
-- ⚠️ **Limited depth** - mutation-based only
+- 💡Random inputs ➡️ Use fuzzers to mutate inputs
+- 💡Sanitizers ➡️ Address sanitizer caught the issue
 
 ---
 
-# Example 2: LWIP DHCP with AFL++
-## Grey-box fuzzing - Real-world impact
+# Tools and examples
 
-```bash
-make fuzz MODE=dhcp_client
-# Found crashes in network stack
-# Reproducible with standard GCC
-```
+|   |   |     |
+|-------------------|------|----|
+| **00_radamsa_hello**  | **01_radamsa_sample** |  **02_afl_lwip_dhcp** |
+| **03_boofuzz_iotparser** |  **04_boofuzz_mdns** | **05_fuzztest_iotparser** <br/> 💡Property based  <br/> ➡️ Define *correct*|
+| **06_angr_firmwarebin** |  **07_afl_lwip** | **08_afl_mdns_gcov** <br/>💡Generate seeds  <br/> ➡️ LLM with gcov |
+| **09_aflnet_dhcp_server** | **10_afl_mqtt** | **11_afl_dpcp_server**    |
 
-**Key Takeaways:**
-- ✅ **High effectiveness** - found real bugs in production code
-- ✅ **Coverage-guided** - explores complex code paths
-- ✅ **Reproducible** - crashes work without instrumentation
-- ✅ **CI-ready** - can be automated
 
 ---
 
-# Example 3: IoT Parser with Fuzztest
-## Property-based testing integration
+# Experiment: mDNS library
+
+* Explore crashes
+* Recreate UDP packet from bin payload
+* Send the packet
+
+---
+
+### 💡Start fuzzing now
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ➡️ Pull __aflplusplus__ docker image
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ➡️ Generate fuzz targets with coding assistants
+
+### 💡Generate input seed
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Use mutators instead of random inputs
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Use LLMs, coverage driven
+
+### 💡Next steps
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Use sanitizers (asan, uban, ...)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Add fuzzing to CI  10m ~ 1h, weekend runs
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Integrate with unit/property based tests
+
+---
+
+# Property-based testing integration
 
 ```cpp
 TEST(IoTParserTest, FuzzMqttTopicParsing) {
-  // Combines unit tests + fuzzing
+  // Combines:
+  //   1) unit tests 
+  //   2) property based tests
+  //   3) fuzzing
   // 16,984 runs, 192 edges covered
   // Found buffer overflow in 69-byte input
 }
 ```
+---
 
-**Key Takeaways:**
-- ✅ **Test integration** - works with existing unit tests
-- ✅ **Property-based** - validates invariants
-- ✅ **Fast feedback** - 291ms for 16K runs
-- ✅ **Regression tests** - auto-generates test cases
+# Resources & Next Steps
 
+## 📚 **Learn More**
+- **0xFFFFE Repository**: https://github.com/david-cermak/0xFFFFE
+- **AFL++ Documentation**: https://github.com/AFLplusplus/AFLplusplus
+- **Fuzztest Guide**: https://github.com/google/fuzztest
+
+---
+---
 ---
 
 # Example 4: Firmware Binary with angr
