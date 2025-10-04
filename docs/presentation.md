@@ -33,11 +33,12 @@ style: |
 * **Methods** (Host tests, HW in the loop, QEMU)
 
 ---
-# Experiment
+# Experiment 1/2: mDNS library
 
-* mDNS library
-  - real library
-  - real bug
+## Fuzz with AFL++
+
+* Production library
+* Real bug
 
 ---
 
@@ -97,35 +98,11 @@ style: |
 
 ---
 
-
-
-# Hello World with radamsa
-
-```cpp
-printf("Hello ");
-printf(argv[1]);  // printf("%s", argv[1]);
-printf("!\n");
-// ./hello Josef
-// ./hello %s
-```
-
-```bash
-echo "David @#$^%&" | radamsa -n 1000 | xarg -0 ./hello
-#
-# 1000 runs, 6 errors found
-# AddressSanitizer: SEGV on format string vulnerability
-```
-
-- 💡Random inputs ➡️ Use fuzzers to mutate inputs
-- 💡Sanitizers ➡️ Address sanitizer caught the issue
-
----
-
 # Tools and examples
 
 |   |   |     |
 |-------------------|------|----|
-| **00_radamsa_hello**  | **01_radamsa_sample** |  **02_afl_lwip_dhcp** |
+| **00_radamsa_hello**  <br/> 💡 Use sanitizers  | **01_radamsa_sample** |  **02_afl_lwip_dhcp** |
 | **03_boofuzz_iotparser** |  **04_boofuzz_mdns** | **05_fuzztest_iotparser** <br/> 💡Property based  <br/> ➡️ Define *correct*|
 | **06_angr_firmwarebin** |  **07_afl_lwip** | **08_afl_mdns_gcov** <br/>💡Generate seeds  <br/> ➡️ LLM with gcov |
 | **09_aflnet_dhcp_server** | **10_afl_mqtt** | **11_afl_dpcp_server**    |
@@ -133,11 +110,20 @@ echo "David @#$^%&" | radamsa -n 1000 | xarg -0 ./hello
 
 ---
 
-# Experiment: mDNS library
+# Experiment 2/2: mDNS library
 
 * Explore crashes
 * Recreate UDP packet from bin payload
 * Send the packet
+
+---
+
+# Resources & Next Steps
+
+## 📚 **Learn More**
+- **0xFFFFE Repository**: https://github.com/david-cermak/0xFFFFE
+- **AFL++ Documentation**: https://github.com/AFLplusplus/AFLplusplus
+- **Fuzztest Guide**: https://github.com/google/fuzztest
 
 ---
 
@@ -169,20 +155,33 @@ TEST(IoTParserTest, FuzzMqttTopicParsing) {
   // Found buffer overflow in 69-byte input
 }
 ```
----
-
-# Resources & Next Steps
-
-## 📚 **Learn More**
-- **0xFFFFE Repository**: https://github.com/david-cermak/0xFFFFE
-- **AFL++ Documentation**: https://github.com/AFLplusplus/AFLplusplus
-- **Fuzztest Guide**: https://github.com/google/fuzztest
 
 ---
----
+
+
+# Hello World with radamsa
+
+```cpp
+printf("Hello ");
+printf(argv[1]);  // printf("%s", argv[1]);
+printf("!\n");
+// ./hello Josef
+// ./hello %s
+```
+
+```bash
+echo "David @#$^%&" | radamsa -n 1000 | xarg -0 ./hello
+#
+# 1000 runs, 6 errors found
+# AddressSanitizer: SEGV on format string vulnerability
+```
+
+- 💡Random inputs ➡️ Use fuzzers to mutate inputs
+- 💡Sanitizers ➡️ Address sanitizer caught the issue
+
 ---
 
-# Example 4: Firmware Binary with angr
+# Firmware Binary with angr
 ## White-box analysis - Research frontier
 
 ```python
@@ -199,87 +198,10 @@ TEST(IoTParserTest, FuzzMqttTopicParsing) {
 
 ---
 
-# My Quick Recommendations
-
-## 🚀 **For Fast Results**: AFL++
-- Minimal setup, maximum impact
-- Coverage-guided exploration
-- Works great with embedded protocols
-
-## 🔍 **For Test Integration**: Fuzztest
-- Combines with unit testing
-- Property-based validation
-- Perfect for CI/CD pipelines
-
----
-
-# Embedded-Specific Considerations
-
-## Environment Options
-- **Host testing**: Fast, easy debugging
-- **QEMU emulation**: Hardware-like behavior
-- **Hardware-in-loop**: Real target validation
-
-## Target Selection
-- **Protocol stacks**: DHCP, mDNS, MQTT
-- **Parsers**: JSON, HTTP, custom formats
-- **Network services**: Servers, clients
-
-
----
-
-# Getting Started Workflow
-
-- Start with simple parsers or protocol handlers
-- Compile on host
-- Setup fuzz target
-- Run in CI
-
----
-
-# CI Integration Strategy
-
-## Continuous Fuzzing Pipeline
-```yaml
-fuzz_job:
-  - Build with AFL++ instrumentation
-  - Run fuzzer for 15-60 minutes
-  - Check for crashes and timeouts
-  - Fail the job if any + upload artifacts
-```
-
----
-
-
 # Key Takeaways
 
-## **AFL++**
+## **1) AFL++** -- Quick start
 
-## **Fuzztest**
+## **2) Fuzztest** -- Property based & unit tests
 
-## **CI integration**
-
----
-
-# Resources & Next Steps
-
-## 📚 **Learn More**
-- **0xFFFFE Repository**: https://github.com/your-repo
-- **AFL++ Documentation**: https://github.com/AFLplusplus/AFLplusplus
-- **Fuzztest Guide**: https://github.com/google/fuzztest
-
----
-
-## 🛠️ **Try It Yourself**
-1. Clone the 0xFFFFE repository
-2. Start with `examples/00_radamsa_hello`
-3. Progress to `examples/02_afl_lwip_dhcp`
-4. Experiment with `examples/05_fuzztest_iotparser`
-
----
-
-# Thank You!
-
-**Fuzzing is not just for security professionals**  
-**Every embedded engineer should be aware of these techniques**
-**0xFFFFE - Fuzzing Fundamentals For Firmware Engineers**
+## **3) CI integration** -- 15m fuzzing/week
