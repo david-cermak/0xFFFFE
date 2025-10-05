@@ -33,12 +33,18 @@ style: |
 * **Methods** (Host tests, HW in the loop, QEMU)
 
 ---
-# Experiment 1/2: mDNS library
+# Experiment 1/4: mDNS library
 
 ## Fuzz with AFL++
 
 * Production library
 * Real bug
+
+---
+
+# Experiment 2/4: Revert 8fd2c99f and start fuzzing
+
+![fuzzing](start_fuzzing.png)
 
 ---
 
@@ -110,11 +116,20 @@ style: |
 
 ---
 
-# Experiment 2/2: mDNS library
+# Experiment 3/4: mDNS library
 
 * Explore crashes
-* Recreate UDP packet from bin payload
-* Send the packet
+![fuzzing](crashes.png)
+* Inspect the crash bins
+![fuzzing](binary.png)
+
+---
+
+# Experiment 4/4: Construct the packet and send it
+![fuzzing](send.png)
+
+![fuzzing](crash_esp.png)
+
 
 ---
 
