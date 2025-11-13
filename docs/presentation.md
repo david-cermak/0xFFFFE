@@ -21,33 +21,6 @@ style: |
 
 ---
 
-# 0xFFFFE
-
-### __github.com/david-cermak/0xFFFFE__
-
-* **Projects** (demo apps -> libs)
-* **Tools** -- fuzzers
-  * Black-box
-  * Grey box (Coverage guided, state guided, protocol fuzzers, LLM enhanced)
-  * White box fuzzers
-* **Methods** (Host tests, HW in the loop, QEMU)
-
----
-# Experiment 1/4: mDNS library
-
-## Fuzz with AFL++
-
-* Production library
-* Real bug
-
----
-
-# Experiment 2/4: Revert 8fd2c99f and start fuzzing
-
-![fuzzing](start_fuzzing.png)
-
----
-
 
 # What is Fuzzing?
 
@@ -58,6 +31,65 @@ style: |
 - **Security**: Discover vulnerabilities in protocol stacks
 - **Edge Cases**: Uncover hard-to-reproduce issues
 - **CI Integration**: Automated testing for continuous quality
+
+---
+## Experiment #1: mDNS library (1/5)
+
+### Fuzz with AFL++
+
+* Production library 👉 [mDNS](https://components.espressif.com/components/espressif/mdns)
+* Real bug 👉 Fixed in [8fd2c99f](https://github.com/espressif/esp-protocols/commit/8fd2c99f)
+###  Experiment
+1) revert the fix, pull `aflplusplus` docker image
+2) start fuzzing⚙️
+3) convert the crash bins to multicast packets➡️
+4) send the packet to local network and observe your device💥
+
+---
+
+#### Experiment #1: Start fuzzing with AFL++ (2/5)
+
+![fuzzing](start_fuzzing.png)
+
+---
+
+### Experiment #1: Conclude fuzzing campaign (3/5)
+
+* Explore crashes (found 8 crashes!)
+![fuzzing](crashes.png)
+* Inspect the crash bins
+![fuzzing](binary.png)
+
+---
+
+### Experiment #1: Construct the packet and send it (4/5)
+![fuzzing](send.png)
+
+![fuzzing](crash_esp.png)
+
+---
+
+### Experiment #1: Conclusion (5/5)
+
+* Crashes found after ~15 minutes of fuzzing **on host**
+* Root-cause: Invalid TXT list processing
+* Issue: `free()` of invalid pointer causes the target to reset (by default)
+* Periodic send of the **crafted packet** keep all *vulnerable* ESP32's in a local network in **reset loop**
+
+---
+
+
+## __github.com/david-cermak/0xFFFFE__
+
+### Fuzzing Fundamentals For Firmware Engineers (FFFFE)
+
+
+* **Projects** (demo apps -> libs)
+* **Tools** -- fuzzers
+  * Black-box
+  * Grey box (Coverage guided, state guided, protocol fuzzers, LLM enhanced)
+  * White box fuzzers
+* **Methods** (Host tests, HW in the loop, QEMU)
 
 ---
 
@@ -76,19 +108,21 @@ style: |
 ---
 
 ## Black box
+* Mutate inputs and send to the *DUT*
 
 ![fuzzing](black.png)
 
 ---
 
 ## Grey box
+* Builds a feedback loop from the actual inputs
 
 ![fuzzing](grey.png)
 
 ---
 
 ## White box
-
+* Resolves *vulnerable* inputs from "interesting" points in the *DUT* code
 ![fuzzing](white.png)
 
 ---
@@ -102,9 +136,42 @@ style: |
 | **Grey-box** | AFL++ | Feedback-driven exploration | High effectiveness, finds complex bugs | Requires instrumentation |
 | **White-box** | angr | Path analysis without execution | Works on binaries, deep analysis | Limited, research-focused |
 
+
 ---
 
-# Tools and examples
+## Experiment #2: Hello World with radamsa (1/2)
+
+```cpp
+printf("Hello ");
+printf(argv[1]);  // printf("%s", argv[1]);
+printf("!\n");
+// $./hello David
+// Hello David!
+```
+Contrived example to demonstrate fuzzing principles
+* `warning: format string is not a string literal (potentially insecure)`
+* Format injection issue `./hello %s` dereferences *unknown* stack memory
+* Doesn't *usually* crash on linux
+  * Needs **address sanitizer**!
+
+---
+## Experiment #2: Hello World with radamsa (2/2)
+1) build with `-fsanitize=address`
+2) fuzz on command line: Pipe your inputs to the *fuzzer* and then to your *DUT*
+
+```bash
+echo "David @#$^%&" | radamsa -n 1000 | xarg -0 ./hello
+#
+# 1000 runs, 6 errors found
+# AddressSanitizer: SEGV on format string vulnerability
+```
+
+- 💡Random inputs ➡️ Use fuzzers to mutate inputs
+- 💡Sanitizers ➡️ Address sanitizer caught the issue
+
+---
+
+# Tools and examples in 0xFFFFE repo
 
 |   |   |     |
 |-------------------|------|----|
@@ -116,49 +183,11 @@ style: |
 
 ---
 
-# Experiment 3/4: mDNS library
-
-* Explore crashes
-![fuzzing](crashes.png)
-* Inspect the crash bins
-![fuzzing](binary.png)
-
----
-
-# Experiment 4/4: Construct the packet and send it
-![fuzzing](send.png)
-
-![fuzzing](crash_esp.png)
-
-
----
-
-# Resources & Next Steps
-
-## 📚 **Learn More**
-- **0xFFFFE Repository**: https://github.com/david-cermak/0xFFFFE
-- **AFL++ Documentation**: https://github.com/AFLplusplus/AFLplusplus
-- **Fuzztest Guide**: https://github.com/google/fuzztest
-
----
-
-### 💡Start fuzzing now
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ➡️ Pull __aflplusplus__ docker image
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ➡️ Generate fuzz targets with coding assistants
-
-### 💡Generate input seed
-
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Use mutators instead of random inputs
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Use LLMs, coverage driven
-
-### 💡Next steps
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Use sanitizers (asan, uban, ...)
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Add fuzzing to CI  10m ~ 1h, weekend runs
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Integrate with unit/property based tests
-
----
-
 # Property-based testing integration
+
+## Meet **fuzztest**
+* Extends fuzzing with **Property based tests**
+* Uses standard GTest/GMock
 
 ```cpp
 TEST(IoTParserTest, FuzzMqttTopicParsing) {
@@ -170,29 +199,6 @@ TEST(IoTParserTest, FuzzMqttTopicParsing) {
   // Found buffer overflow in 69-byte input
 }
 ```
-
----
-
-
-# Hello World with radamsa
-
-```cpp
-printf("Hello ");
-printf(argv[1]);  // printf("%s", argv[1]);
-printf("!\n");
-// ./hello Josef
-// ./hello %s
-```
-
-```bash
-echo "David @#$^%&" | radamsa -n 1000 | xarg -0 ./hello
-#
-# 1000 runs, 6 errors found
-# AddressSanitizer: SEGV on format string vulnerability
-```
-
-- 💡Random inputs ➡️ Use fuzzers to mutate inputs
-- 💡Sanitizers ➡️ Address sanitizer caught the issue
 
 ---
 
@@ -213,10 +219,28 @@ echo "David @#$^%&" | radamsa -n 1000 | xarg -0 ./hello
 
 ---
 
-# Key Takeaways
+## 📚 **Learn More**
 
-## **1) AFL++** -- Quick start
+- **0xFFFFE Repository**
+   - https://github.com/david-cermak/0xFFFFE
+- **AFL++** -- Quick start
+   - https://github.com/AFLplusplus/AFLplusplus
+- **Fuzztest** -- Property based & unit tests
+   - https://github.com/google/fuzztest
+- **CI integration** -- 15m fuzzing/week
+   - [example with GitHub actions](https://github.com/espressif/esp-protocols/blob/318bca16576f679036f9fb09ecada68f66c102fd/.github/workflows/mdns__host-tests.yml#L97-L110)
+---
 
-## **2) Fuzztest** -- Property based & unit tests
+### 💡Start fuzzing now
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ➡️ Pull __aflplusplus__ docker image
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  ➡️ Generate fuzz targets with coding assistants
 
-## **3) CI integration** -- 15m fuzzing/week
+### 💡Generate input seed
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Use mutators instead of random inputs
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Use LLMs, coverage driven
+
+### 💡Next steps
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Use sanitizers (asan, ubsan, ...)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Add fuzzing to CI  10m ~ 1h, weekend runs
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ➡️ Integrate with unit/property based tests
