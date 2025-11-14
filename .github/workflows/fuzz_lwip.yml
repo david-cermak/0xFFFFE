@@ -13,7 +13,7 @@ jobs:
     name: Fuzzer tests for lwip
 
     runs-on: ubuntu-22.04
-    container: aflplusplus/aflplusplus
+    container: aflplusplus/aflplusplus:v4.34c
     steps:
       - name: Checkout lwip
         uses: actions/checkout@v4
