@@ -3,25 +3,32 @@ CFLAGS ?= -O2 -g -fno-omit-frame-pointer -Wall -Wextra -Wno-unused-parameter
 
 # Allow building with AFL++ by overriding CC=afl-clang-fast or afl-clang-lto
 
-ROOT := ../../..
-IDF_ROOT := $(abspath $(ROOT))
+ifndef IDF_PATH
+$(error IDF_PATH is not set. Please export IDF_PATH=/path/to/esp-idf)
+endif
+
+IDF_ROOT := $(abspath $(IDF_PATH))
+
+DUT_DIR ?= DUT
+MQTT_DIR := $(DUT_DIR)/esp-mqtt
+MQTT_ZIP_URL := https://github.com/david-cermak/esp-mqtt/archive/refs/heads/test/fuzz.zip
 
 MOCK_INC := mocks/include
-HOST_TEST_MOCKS := $(IDF_ROOT)/components/mqtt/esp-mqtt/host_test/mocks/include
+HOST_TEST_MOCKS := $(MQTT_DIR)/host_test/mocks/include
 
 INCLUDES := \
   -I$(MOCK_INC) \
   -I$(HOST_TEST_MOCKS) \
-  -I$(IDF_ROOT)/components/mqtt/esp-mqtt/include \
-  -I$(IDF_ROOT)/components/mqtt/esp-mqtt/lib/include \
+  -I$(MQTT_DIR)/include \
+  -I$(MQTT_DIR)/lib/include \
   -I$(IDF_ROOT)/components/http_parser
 
 SRCS := \
-  $(IDF_ROOT)/components/mqtt/esp-mqtt/mqtt_client.c \
-  $(IDF_ROOT)/components/mqtt/esp-mqtt/mqtt5_client.c \
-  $(IDF_ROOT)/components/mqtt/esp-mqtt/lib/mqtt_msg.c \
-  $(IDF_ROOT)/components/mqtt/esp-mqtt/lib/mqtt5_msg.c \
-  $(IDF_ROOT)/components/mqtt/esp-mqtt/lib/mqtt_outbox.c \
+  $(MQTT_DIR)/mqtt_client.c \
+  $(MQTT_DIR)/mqtt5_client.c \
+  $(MQTT_DIR)/lib/mqtt_msg.c \
+  $(MQTT_DIR)/lib/mqtt5_msg.c \
+  $(MQTT_DIR)/lib/mqtt_outbox.c \
   $(IDF_ROOT)/components/http_parser/http_parser.c \
   src/platform_host.c \
   src/esp_transport_fuzz.c \
@@ -46,9 +53,29 @@ LDLIBS ?= -lpthread
 
 OUT := mqtt_client_fuzz
 
-.PHONY: all clean
+.DEFAULT_GOAL := all
 
-all: $(OUT)
+.PHONY: all clean deps
+
+.DELETE_ON_ERROR:
+
+deps: $(MQTT_DIR)/.stamp
+
+all: deps $(OUT)
+
+$(MQTT_DIR)/.stamp:
+	@set -e; \
+	if [ ! -d "$(MQTT_DIR)" ]; then \
+		echo "Fetching esp-mqtt fuzz library into $(MQTT_DIR) ..."; \
+		mkdir -p "$(DUT_DIR)"; \
+		tmp="$$(mktemp)"; \
+		curl -L --fail -o "$$tmp" "$(MQTT_ZIP_URL)"; \
+		rm -rf "$(DUT_DIR)/esp-mqtt-test-fuzz" "$(MQTT_DIR)"; \
+		unzip -q "$$tmp" -d "$(DUT_DIR)"; \
+		rm -f "$$tmp"; \
+		mv "$(DUT_DIR)/esp-mqtt-test-fuzz" "$(MQTT_DIR)"; \
+	fi; \
+	touch "$@"
 
 OVERRIDES := $(MOCK_INC)/platform_overrides.h $(MOCK_INC)/net/if.h
 
